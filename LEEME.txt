@@ -1,0 +1,39 @@
+#################################################################################
+
+Para poder reproducir toda la práctica es necesario descargar y colocar la carpeta "Archivos_necesarios" en el directorio con los scripts. El archivo comprimido se puede encontrar en: https://drive.google.com/file/d/1Z2lxt69aQAPyAJsmw_UkGYNc8NiHEzbR/view?usp=sharing
+
+#################################################################################
+
+Resumen del contenido de los 5 scripts principales de la práctica
+
+-Scrap_ine: En el se sacan los datos de población haciendo web scraping de la página del INE con Selenium (Código de Python (Spyder))
+
+-Preprocesado: En este se consiguen los datos de paro extrayendo el csv directamente del html con las url’s desde páginas del SEPE. Posteriormente se arreglan los df's para realizar las visualizaciones estáticas y la visualización dinámica. (Nota: Estos df's habrá que modificarlos ligeramente para cada una de las visualizaciones en función del objetivo) (Código de R)
+
+-Visualizacion_estatica: En este se realizan las tres visualizaciones estáticas (En concreto con ggplot2) (Código de R)
+
+-Visualizacion_dinamica: Se realiza una app con (shiny+leaflet y con gráficos de ggplot2 (estos últimos estáticos)) (Código de R)
+
+-Storytelling: Se construye el storytelling uniendo todos las visualizaciones (estáticas y dinámica (en este caso con la ayuda de shinyapps.io)) (Código de Rmarkdown + html)
+
+Los archivos necesarios para crear la aplicación en shinyapps.io se pueden encontrar en : https://drive.google.com/drive/folders/1C8mM9chQlyqB735Q4Ne5iappkX7KKAAD?usp=sharing
+
+#################################################################################
+
+Resumen de los archivos de datos... en "Archivos_necesarios". Imprescindible para los scripts
+
+-chromedrives : Ejecutable necesario para realizar el web scraping con Selenium
+
+-table_prov_female y table_prov_male : df's con datos de población obtenidos tras hacer web scraping. Necesarios para ejecutar el script "preprocesado"
+
+-table_prov_female_complete, table_prov_male_complete y table_paro : df's obtenidos tras el preprocesado. Necesarios para la visualización dinámica y visualizaciones estáticas. 
+
+-carpeta municipios_etrs89_30n - datos geográficos (en concreto nos interesa el shapefile (shp)) necesarios para la visualización dinámica y visualizaciones estáticas. 
+
+-Imagen pyramide final - Imagen (png) final de una de las visualizaciones estáticas (en el código se explica la necesidad de esta imagen)
+
+#################################################################################
+
+Además, se adjuntan dos documentos de texto para explicar las visualizaciones que se han realizado. En estos documentos solamente se explica brevemente la motivación de las visualizaciones, no se habla si no es necesario de características del código, ya que este ámbito está comentado en los scripts correspondientes. 
+
+Con respecto a los insights. Considero que en el storytelling se pueden ver fácilmente los objetivos de cada una de las visualizaciones realizadas. Sin embargo, comentaré brevemente que insights pretendo extraer de cada visualización en estos dos documentos. 

@@ -1,0 +1,21 @@
+Se ha realizado solamente una aplicación con shiny + leaflet y con gráficos de ggplot2. Es una aplicación muy larga a nivel de código, por tanto explicaré el funcionamiento y motivación general aquí. 
+
+El objetivo es analizar los datos de paro obtenidos de la SEPE. Estos datos contenían información de paro total, paro por género, paro por edad y paro por sector de los últimos 12 años. Por tanto, la motivación inicial era crear una aplicación que permitiese la visualización de toda esta información a nivel provincial y municipal. 
+
+La aplicación en grandes rasgos ofrece la posibilidad de mostrar porcentajes de paro de los cuatro bloques de información que contenía el dataframe (Paro total, paro por sexo, paro por sector (Agricultura, Industria, Construcción y Servicio) y por por edad (Menores de 25, entre 25 y 45 y mayores de 45)). Además, permite ilustrar esta información filtrando por año. 
+
+Para poder graficar estos datos a nivel tanto de provincia como municipio surge el problema de que el volumen de datos a graficar en cada interacción es muy grande y requeriría mucho tiempo cargarlo. Con ello se da la necesidad de no mostrar los datos de todos los municipios de una vez y para solucionarlo surge la idea de mostrar la información por capas. 
+
+La primera capa da información general de paro promedio por provincia, mostrando los valores al pasar el ratón por encima. En el caso del paro total se mostraban los datos con una paleta de colores creada mediante los cuartiles, mientras que para el resto se representan en función del paro predominante (si es hombres o mujeres, en qué sector o en qué edad), por tanto es una paleta creada por factores. 
+
+La continuación lógica era crear una segunda capa que se cargase al seleccionar una provincia. Para ello se amplía la provincia al hacer click sobre ella y se cargan únicamente los datos de los municipios correspondiente. Aquí se muestran los porcentajes de paro por municipio al pasar el ratón por encima y se mantiene la misma filosofía para las paletas. 
+
+Sin embargo, estas dos capas por si solas no dan demasiada información a nivel de municipio que es un punto muy importante del storytelling. Así, añadí una capa más a la que se accedía al hacer click sobre un municipio. En esta se mostraban datos históricos del municipio con ggplot2 customizados para cada una de las cuatro opciones posibles. 
+
+Por último, faltaba añadir otra capa que permitiese reiniciar el mapa en cualquier momento al hacer click fuera de las opciones o tras graficar los datos con ggplot2. 
+
+Es importante destacar que, a la hora de calcular los porcentajes de paro, lo mejor no es obviamente realizarlos sobre la población total (como se ha hecho en esta app). Sino sobre la fracción de población con edad legal de trabajar. Sin embargo, no disponía de estos datos y no conseguí encontrarlos a nivel de municipio para todos los años comprendidos entre 2006 y 2018. Aunque hay que destacar que, al disponer de los datos por género, por lo menos se consigue mejorar la calidad de los resultados en este caso y hacer los ratios de paro por sexo referenciados a la población total de hombres o mujeres como corresponde. 
+
+A pesar de esto, considero que se ha conseguido crear una aplicación con la cual se puede interactuar en gran medida y que contiene mucha información. 
+
+Así uno de los principales objetivos era crear una aplicación que permitiese bastante interacción con ella y que no fuese extremadamente lenta. Con esta los insights que se quieren obtener son algunos como: ¿El paro es una razón predominante para el abandono rural?, ¿El paro en mujeres explica que las mujeres migren más o menos que los hombres? o ¿En qué sectores el paro es mayor?¿Es relevante para el problema estudiado?. Considero que estos insights están explicados en el storytelling y prefiero no destriparlos aquí.

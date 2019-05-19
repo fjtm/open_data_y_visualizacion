@@ -1,0 +1,351 @@
+---
+title: "¿El medio rural se está despoblando?"
+author: "Francisco Javier Tébar Martínez"
+date: "24 de enero de 2019"
+output: html_document
+---
+<style>
+body {
+text-align: justify}
+</style>
+
+<style>
+body{ /* Normal  */
+      font-size: 14px;
+  }
+</style>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hoy en día, se bombardea a la sociedad con decenas de problemas como la inestabilidad política, la sanidad, la inmigración, el terrorismo o el cambio climático. Sí bien todos estos factores son muy importantes en el mundo en el que nos movemos, existen muchos más problemas. 
+
+##¿Has oído hablar del **éxodo rural**?
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Es probable que aquellos con buena memoria recuerden vagamente este concepto de esas lejanas clases de geografía e historia de cuando eran niños. Pues bien, el éxodo rural hace referencia a la **migración del campo a las ciudades**. Aunque este fenómeno es muy antiguo, podemos decir que empezó a tomar fuerza en España a mediados del siglo XVIII con la llegada de la revolución industrial. Así durante más de doscientos años se produjo un flujo, más o menos masivo, de migración hacia las grandes ciudades industriales. Este problema se volvió crítico en España a mediados del siglo XX, **especialmente durante las décadas de los 50-60**, cuando la población, principalmente joven, migró a las ciudades en busca de mejores puestos de trabajo. En definitiva, en busca de un futuro mejor. Posteriormente este flujo de migración cesó considerablemente y el éxodo rural dejó de ser un problema de ámbito social relevante.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Entonces, si este problema era tan importante hace tan solo algo más de 50 años, **¿podemos decir que ha terminado? ** 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pues bien, la mejor respuesta siempre es depende. Si bien la migración masiva ha cesado y, por tanto, no se alcanzan los flujos de hace 50 años. Si nos fijamos en cómo han evolucionado las aldeas (municipios con menos de 300 habitantes) y las villas (con población entre los 300-1000 habitantes) que existían hace 20 años en comparación con el resto de las ciudades y metrópolis, vemos como a día de hoy **se han alcanzado los mínimos de población** en ambos casos. 
+
+<div style="text-align:center">
+```{r include=FALSE}
+# Cargamos los datos correspondientes a la población 
+population_male <- read.csv("Archivos_necesarios/table_prov_male_complete.csv", colClasses=c(rep("character",4),rep("numeric",22)))
+population_female <- read.csv("Archivos_necesarios/table_prov_female_complete.csv", colClasses=c(rep("character",4),rep("numeric",22)))
+population_male <- population_male[,-c(1,ncol(population_male))] 
+population_female <- population_female[,-c(1,ncol(population_female))]
+
+# Arreglamos los nombres
+
+names(population_male)[-1] <- gsub("X","", names(population_male)[-1])
+names(population_female)[-1] <- gsub("X","", names(population_female)[-1])
+
+population_total <- cbind(population_male[,c(1,2,3)], population_male[,-c(1,2,3)] + population_female[,-c(1,2,3)])
+
+library(dplyr)
+
+# Función que normaliza min-max
+
+normalize <- function (col) {
+	normalized = (col - min(col)) / (max(col) - min(col))
+	return (normalized)
+}
+
+# Función que agrupa los datos por tamaño de los pueblos/ciudades y los normaliza
+
+standar_population <- function(df, max, min){
+  population <- df %>%  
+    filter(`1998` >= min, `1998` < max) %>% 
+    summarise_all("sum") 
+  population = normalize(population)
+  return (population)
+} 
+
+# Normalizamos y agrupamos 
+size = c(0,300,1000,50000,250000, 500000, 1500000, 10000000)
+label = c("year","aldea",'villa','ciudad.pequeña','ciudad.medianas','metropolis.subregionales','metropolis.regionales','metropolis.nacionales')
+population_by_size <- data.frame(names(population_total[,-c(1,2,3)]))
+for (i in 1:length(label)){
+  population <- standar_population(population_total[,-c(1,2,3)], size[i+1], size[i])
+  population_by_size <- cbind(population_by_size, t(population)[,1])
+}
+rownames(population_by_size) <- NULL
+population_by_size <- population_by_size[,-c(length(population_by_size))]
+names(population_by_size) <- label
+  
+# Como la tendencia para los'ciudad.pequeña','ciudad.medianas','metropolis.subregionales','metropolis.regionales' y 'metropolis.nacionales' se mantiene se graficará solamente una banda con un nivel de confianza. Es decir la región donde se mueven esos pueblos/ciudades en general 
+
+library(reshape2)
+population_by_size_long <- melt(population_by_size, id.vars="year")
+
+population_by_size_quan <- population_by_size_long %>% 
+  filter(variable %in% c('ciudad.pequeña','ciudad.medianas','metropolis.subregionales','metropolis.regionales','metropolis.nacionales')) %>% 
+  group_by(year) %>% 
+  summarise(q_inf = mean(value) - qt(0.999, 5) * sd(value) / sqrt(n()),
+         q_sup = mean(value) + qt(0.999, 5) * sd(value) / sqrt(n())) %>% 
+  as.data.frame()
+
+library(ggplot2)
+```
+
+```{r echo=FALSE}
+# Creamos variables para la leyenda y el eje y del gráfico
+y.labels <- c('Máxima','Mínima')
+y.values <- c(1,0)
+text <- c(' Ciudades Pequeñas : 1.000-50.000 \n Ciudades Medias : 50.000-250.000 \n Metrópolis Subregionales : 250.000-500.000  \n Metrópolis Regionales :  500.000-1.500.000 \n Metrópolis Nacionales : > 1.500.000')
+
+# Añadimos la franja para las ciudades con más de 1.000 habitantes
+gplot <- ggplot() + 
+  geom_ribbon(data = population_by_size_quan, aes(x = year,  ymin = q_inf-0.01, ymax = q_sup+0.01, group = 1, fill = text), alpha = 0.5)
+
+# Añadimos las lineas para las villas y aldeas
+
+gplot <- gplot +
+  geom_line(data = population_by_size, aes(x = year, y = aldea, group = 1),linetype="dashed", color = "black", size = 1, alpha = 1) +
+  geom_point(data = population_by_size, aes(x = year, y = aldea, group = 1, col="Aldeas : <300"), size = 3) +
+  geom_line(data = population_by_size, aes(x = year, y = villa, group = 1), linetype="dashed", color = "black", size = 1, alpha = 1) +
+  geom_point(data = population_by_size, aes(x = year, y = villa, group = 1, colour="Villas : 300-1.000"),size = 3) 
+
+# Arreglamos los ejes (Falta rotar los valores del eje x)
+
+gplot <- gplot +
+  scale_y_continuous(breaks = y.values, labels = y.labels, name = "Población normalizada", expand = c(0.01, 0)) +
+  scale_x_discrete(expand = c(0.01,0), name = "Año")
+
+# Quitamos el fondo y giramos el eje x
+
+gplot <- gplot +
+  theme_classic(base_size = 16) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.3))
+
+# Añadimos el título
+gplot <- gplot +
+  ggtitle(label = "Evolución de la población por tamaño de municipio \n (1998-2018)") +
+  theme(plot.title = element_text(size = 18, face = "bold", colour = "#3c3c3c"))
+
+# Arreglamos la leyenda (posición, color, margenes...)
+gplot <- gplot +
+  theme(legend.position="bottom", legend.justification="center", legend.box = "horizont", legend.text=element_text(size=10)) +
+  theme(legend.spacing.y = unit(-0.3, "cm"), legend.box.margin=margin(-17,0,-30,-200)) +
+  scale_fill_manual(name="",values="#4ABDAC") +
+  scale_colour_manual(name="",values=c("#FC4A1A","#F7B733"))  
+
+# Añadimos una aclaración al gráfico
+gplot <- gplot + 
+  labs(caption="*Unidades de la leyenda en habitantes") + 
+  theme(plot.caption = element_text(size = 10))
+gplot
+
+#ggsave("Normalp.png", plot = gplot,width = 10, height = 7)
+```
+</div>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Las aldeas han perdido población de manera implacable durante los últimos 20 años independientemente de la variación del marco económico, social o político. En el caso de las villas, el escenario es distinto. El estado de estos municipios mejoró durante la primera década del siglo XXI, sin embargo, a raíz de la fuerte crisis que sufrió España a partir del 2012, las villas se han vuelto a despoblar hasta volver a los índices de población de hace 20 años. De esta manera podemos decir que **a día de hoy se sigue produciendo este fenómeno. **
+
+<div style="float: left">
+```{r echo=FALSE, fig.height=9, fig.width=7, message=FALSE, warning=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Archivos_necesarios/Imagen pyramide final.png")
+g <- rasterGrob(img, interpolate=TRUE)
+
+ggplot() +
+  annotation_custom(g, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+  theme_void()
+```
+</div>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sin embargo, esta despoblación de villas y aldeas no se produce de forma homogénea en todas las provincias de España. Si dividimos el territorio español en seis regiones: Madrid y provincias adyacentes, Barcelona y adyacentes, provincias de la costa mediterránea, provincias de la costa cantábrica, las Islas Baleares y Canarias y el resto de las provincias de interior, los datos muestran como este panorama no se puede generalizar en absoluto para toda la geografía española.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Las dos principales metrópolis nacionales, **Madrid y Barcelona, siguen atrayendo población de forma masiva**, aumentando el censo de las villas y aldeas en más de 120.000 habitantes en los últimos 20 años. Sin embargo, este fenómeno no solo afecta a las provincias de Barcelona y Madrid, sino que en general (exceptuando Ávila y Segovia) todas las provincias contiguas a estas metrópolis nacionales han sufrido un incremento de población enorme sumando más de 150.000 habitantes a sus villas y aldeas. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;El panorama en las provincias costeras es algo diferente. Mientras que el área de la costa mediterránea, en general, gana población, sobre todo la provincia de Valencia, la zona de la costa cantábrica pierde habitantes, especialmente las Comunidades Autónomas de Galicia y Asturias, mientras que Cantabria y el País Vasco ganan población. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sin embargo, a la hora de analizar la situación del resto de las provincias de interior, nos topamos con los datos demoledores de que en volumen neto, las villas y aldeas de este territorio han perdido más de 170.000 habitantes. Y sin contar Zaragora, Navarra y Álava, vemos que el interior de España ha sufrido descensos de entorno a 200.000 habitantes. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;En este punto, cabe destacar que aunque la migración no se está produciendo exclusivamente un un solo género, el flujo migratorio de las mujeres es un 20% superior al de los hombres. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Así, cientos de años de historia siguen viéndose amenazados por el éxodo de población a las grandes urbes y **la despoblación amenaza seriamente al interior peninsular.**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Puede que a estas alturas pienses que no es tan grave, al fin y al cabo, son solo pueblos muy pequeños, ¿no?. Es muy probable que la gente se mueva a municipios vecinos algo más grandes. Pues bien, puesto que una imagen vale más que mil palabras, observen el siguiente mapa:
+
+<br>
+<div style="text-align:center">
+```{r include=FALSE}
+
+library(rgdal)
+library(viridis) # Puede que ya no haga falta
+library(cowplot)
+# Cargamos el shapefile que utilizaremos para graficar los municipios con ggplot2. Este ha sido obtenido del siguiente enlace
+# https://team.carto.com/u/furilo/tables/municipios_etrs89_30n/public
+
+municipalities_spain <- readOGR(dsn = "Archivos_necesarios/municipios_etrs89_30n/municipios_etrs89_30n.shp", layer = "municipios_etrs89_30n", encoding = "UTF-8")
+
+# Tratamos este shapefile para poder trabajar con el id de los municipios y provincias
+
+#https://stackoverflow.com/questions/34543468/successor-to-ggplot2fortify
+map_data_fortified_spain <- ggplot2:::fortify.SpatialPolygonsDataFrame(municipalities_spain) 
+map_data_fortified_spain$id <- as.character(map_data_fortified_spain$id)
+code_mun <- as.data.frame(municipalities_spain$codigo)
+names(code_mun) <- c("code")
+code_mun <- code_mun %>% mutate(id = 0:(nrow(municipalities_spain)-1), code_prov = as.character(municipalities_spain$cod_prov)) 
+code_mun$id <- as.character(code_mun$id)
+spain_shp_df <- left_join(map_data_fortified_spain, code_mun, by = "id")
+
+# Calculamos la variación de población entre distintos años que utilizaremos para graficar
+
+population_total <- population_total %>% 
+  mutate( diff_1998_2011 = ((`2011`/`1998`)-1)*100, diff_2011_2018 = ((`2018`/`2011`)-1)*100,
+          diff_1998_2018 = ((`2018`/`1998`)-1)*100)
+# Arreglamos los id's de las provincias
+code_add <- gsub("0.","0", spain_shp_df$code_prov)
+code_add <- gsub("[1-9]{1}[0-9]{1}", "", code_add)
+spain_shp_df$code <- paste0(code_add, spain_shp_df$code)
+population_total_coord <- left_join(spain_shp_df, population_total, by = c("code" = "code_prov_mun"))
+population_total_coord[is.na(population_total_coord)] <- 0
+head(population_total_coord)
+```
+
+```{r echo=FALSE}
+plot_map <- function(population_total_coord, subtitle, pal) {
+  
+  population_peninsular <- population_total_coord %>%
+    filter(code_prov != 35, code_prov != 38, code_prov != 51, code_prov != 52 )
+  
+  theme_map <- function(...) {  
+  theme_minimal() +
+    theme(
+      text = element_text( color = "#22211d"),
+      axis.line = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+      panel.grid.minor = element_blank(),
+      plot.background = element_rect(fill = "#f5f5f2", color = NA), 
+      panel.background = element_rect(fill = "#f5f5f2", color = NA), 
+      legend.background = element_rect(fill = "#f5f5f2", color = NA),
+      panel.border = element_blank(),
+      ...
+    )
+}
+  
+  peninsular_plot <- ggplot() +  
+    geom_polygon(data = population_peninsular, aes(fill = brks,x = long, y = lat, group = group)) +
+    coord_equal() + 
+    theme_map() +
+    theme(
+      legend.position = c(0.8, 0.05),
+      legend.text.align = 0,
+      legend.background = element_rect(fill = alpha('white', 0.2)),
+      legend.text = element_text(size = 10, hjust = 0, color = "#4e4d47"),
+      legend.title = element_text(size = 10),
+      plot.title = element_text(size = 28, hjust = 0.8, color = "#4e4d47"),
+      plot.subtitle = element_text(size = 20, hjust = 0.8, face = "italic", color = "#4e4d47"),
+      plot.caption = element_text(size = 14, hjust = 0.95, color = "#4e4d47"),
+      plot.margin = unit(c(.5,.5,.2,.5), "cm"),
+      panel.border = element_blank()
+    ) +
+    theme(plot.margin = margin(t = 0.1, r = 0, b = 1.1, l = 1.3, unit = "cm")) +
+    labs(x = NULL, 
+         y = NULL, 
+         title = "Variación de la población", 
+         subtitle = subtitle, 
+         caption = "") +
+    scale_fill_manual(
+      values = color,
+      name = "",
+      guide = guide_legend(
+       keyheight = unit(3, units = "mm"),
+       title.position = 'top',
+       reverse = F)
+      ) 
+ 
+  population_island <- population_total_coord %>%
+    filter(code_prov %in% c(35,38))
+  
+  islands_plot <- ggplot() +  
+    geom_polygon(data = population_island, aes(fill = brks,x = long, y = lat, group = group)) +
+    coord_equal() + 
+    theme_map() +
+    scale_fill_manual(
+      values = color,
+      name = ""
+      ) +
+    theme(legend.position="none", panel.border = element_rect(colour = "black", fill=NA, size=1))
+  
+  final_spain_plot <-
+    ggdraw() +
+    draw_plot(peninsular_plot) +
+    draw_plot(islands_plot, x = 0.04, y = 0, width = .25, height = .25)
+  final_spain_plot
+}
+
+labels = c( "Descenso mayor del 40%",
+            "Descendo del 20 al 40%",
+            "Descenso de hasta el 20%",
+            "Aumento de hasta el 15%",
+            "Aumento del 15 al 30%",
+            "Aumento mayor del 30%")
+
+
+minVal <- min(population_total_coord$diff_1998_2018, na.rm = T)
+maxVal <- max(population_total_coord$diff_1998_2018, na.rm = T)
+
+library(RColorBrewer)
+
+brks <- c(minVal,-40,-20,0,15,30, maxVal)
+
+
+population_total_coord$brks <- cut(population_total_coord$diff_1998_2018, 
+                                     breaks = brks, 
+                                     labels = labels, 
+                                     include.lowest = T)
+                             
+color = inferno(7)[1:6]
+map <- plot_map(population_total_coord, c("1998-2018"), color)
+map
+#ggsave("Map.png", plot = map, width = 10, height = 7)
+
+```
+</div>
+<br>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;La mayor parte de la regiones interiores de España han perdido o concentrado en ciudades hasta un 20% de la población en tan solo 20 años, aunque realmente las zonas más amenzadas se concentran en la mitad norte de España, donde muchos municipios han disminuido su población hasta en un 40%.
+
+##**¿Cuáles son las causas? **
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hemos visto que efectivamente el éxodo rural y, en general, el éxodo de las provincias interiores de España continúan lenta pero imparablemente. Hay mucho factores que desencadenan esta situción. Historicamente, algunos de ellos han sido: la escasez de instituciones de enseñanza y la enorme distancia que hay que cubrir para ir a un centro de enseñanza, sumados éstos a la escasa o nula disponibilidad de transporte público, la escasez de servicios (comercio, ocio…) o el desarrollo de tecnologías que hacen que actualmente en la agricultura se necesite menos mano de obra. Sin embargo, el factor más importante ha sido el **desempleo**, principalmente para las mujeres y los jovenes.  
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Todas estas causas fueron las que propiciaron a mitad del siglo XX el alud de migración. Bajo este panorama, queremos responder a la pregunta **¿el paro sigue siendo un factor predominante? La respuesta es sí. ** Para demostrarlo juguemos con la siguiente aplicación, la cual proporciona datos de paro total y predominio de paro por género, sector o edad, tanto a nivel provincial como municipal de toda la geografía española, durante los últimos 12 años.
+
+<iframe src=" https://frantm.shinyapps.io/prueba/"
+        style=" width: 100%; height: 600px;">
+It looks like your browser doesn't support iframes.
+</iframe>
+<font size="2">\*Los porcentajes de paro que se muestran corresponden al número de parados en función del total de población de cada municipio o provincia. Y en el caso del paro por género este cálculo está realizado sobre la población total de mujeres u hombres en el caso que corresponda.</font>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Todos sabemos que el desempleo está fuertemente ligado a la situación económica del país. De esta manera, durante la primera década del siglo XX, España sufrió un periodo de auge que se vio truncado por la fuerte crisis económica que se desencadenó a partir de 2011-2012. Esto se tradujo en que las tasas de desempleo aumentaron entorno a un 10% aproximadamente en el periodo de 2006-2013 y que a día de hoy todavía no se ha recuperado del todo, lo que explica que todavía se siga perdiendo población de manera continua. **¿No lo ves claro? ** Prueba a mirar la evolución del paro en un par de municipios. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Centrémonos ahora en el paro por género. A primera vista, en la mayor parte de los años, el paro es superior en el género femenino que en el masculino en muchas de las provincias. Si nos fijamos en el periodo que abarca entre 2008-2014, las metrópolis nacionales, Madrid y Barcelona, presentaban un paro menor de mujeres que de hombres de manera sorprendente. Esto apoya los datos de que la migración es un 20% más fuerte en mujeres que en hombres. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por otro lado, España es un país donde claramente predomina el sector servicios y de la misma manera, la mayor tasa de desempleo se encuentra en este sector. Así, aunque el desempleo sea prioritario en él en todas las provincias, en órdenes generales, es más fácil encontrar trabajo en ciudades con mucha demanda debido, por ejemplo, al turismo. Por lo tanto, es otro motivo a tener en cuenta. A esto podemos añadir, que si nos fijamos en años posteriores a la crisis, el paro en la construcción también aumentó ligeramente en muchos municipios, lo cual afectaría en gran medida a una gran cantidad de la población.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por último, les invito a investigar los datos por edad. Al estar calculado sobre la población total, no se pueden comparar unas edades con otras. Sin embargo, si se puede ver como ha evolucionado el desempleo en cada generación.
+
+##**¿Hacía dónde vamos? **
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;En una sociedad crecientemente tecnológica con la disponiblidad de un sinfín de datos que permiten destripar la realidad con pruebas, podemos poner sobre la mesa problemas, en este caso de ámbito social, que pueden ser abordados antes de que sea demasiado tarde. La migración de las zonas rurales, si bien no es tan fuerte como hace 60 años, es una situación que claramente sigue produciéndose. De esta manera, si no se ponen medios en materia de empleo, servicios… y se conciencia a la sociedad sobre la importancia del arraigo para que estos pequeños municipios y, en general, las zonas de interior no desaparezcan, nos moveremos hacia un futuro de masificación de las grandes metrópolis nacionales. **Por esta razón aún no es tarde, todavía podemos preservar nuestra historia. **
+
+<br>
+<u>Webgrafía</u>
+
+<li><font size="2">Vicente Pinilla, Luis Antonio Sáez, <a href = "http://www.ceddar.org/content/files/articulof_398_01_Informe-SSPA1-2017-2.pdf">*"La despoblación rural en España: Génesis de un problema y políticas innovadoras"*</a>, Centro de Estudios sobre la
+Despoblación y Desarrollo de Áreas Rurales (CEDDAR) (2017) </font></li>
+
+<br>
+<u>Fuentes de datos</u>
+
+<font size="2">Datos de población obtenidos del INE</font>
+
+<font size="2">Datos de desempleo obtenidos del SEPE</font>

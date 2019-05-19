@@ -1,0 +1,9 @@
+Se han realizado en total tres visualizaciones estáticas, utilizando para ello datos del INE de población por municipio desde 1998 hasta 2018. 
+
+La motivación del primer gráfico es ver cómo ha variado la población en función del tamaño del municipio. Puesto que las escalas son muy dispares, se han normalizado los datos. Con esto conseguimos ver en qué momento de los últimos 20 años se han alcanzado los máximos y mínimos de población en función de la clasificación del municipio. 
+
+La segunda tiene varios objetivos. Lo primero es hacer de puente de unión entre la primera visualización estática y la tercera. La segunda, es estudiar si todas las villas y aldeas de todas las provincias se encuentran en la misma situación.La tercera es obtener información de si estas variaciones de población se producen igual en el género femenino que en el masculino. Y la última es hacer unión entre las visualizaciones estáticas y dinámicas, ya que esta última emplea datos tanto a nivel de CA, como nivel provincial, como municipal. 
+
+La última visualización es un mapa que tiene como objetivo arrojar un vistazo a nivel general de cómo ha variado la población en toda España en los últimos años. Esto nos permite ver de manera simple que regiones de España están perdiendo población y cuales no. Y en especial nos interesa saber si las metrópolis nacionales (Madrid y Barcelona), están aumentando su población. 
+
+Hay por tanto muchos insights que se pretenden explicar con estas visualizaciones (todas las cuestiones anteriores), pero considero que están claros en el storytelling y por tanto prefiero no destriparlos por separado. 
